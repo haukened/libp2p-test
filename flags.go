@@ -28,6 +28,7 @@ func (al *addrList) Set(value string) error {
 	return nil
 }
 
+// StringsToAddrs creates a list of multiaddresses from a list of strings
 func StringsToAddrs(addrStrings []string) (maddrs []maddr.Multiaddr, err error) {
 	for _, addrString := range addrStrings {
 		addr, err := maddr.NewMultiaddr(addrString)
@@ -39,6 +40,7 @@ func StringsToAddrs(addrStrings []string) (maddrs []maddr.Multiaddr, err error) 
 	return
 }
 
+// Config holds application configurations
 type Config struct {
 	RendezvousString string
 	BootstrapPeers   addrList
@@ -46,6 +48,7 @@ type Config struct {
 	ProtocolID       string
 }
 
+// ParseFlags parses flags
 func ParseFlags() (Config, error) {
 	config := Config{}
 	flag.StringVar(&config.RendezvousString, "rendezvous", "meet me here",
