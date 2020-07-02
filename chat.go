@@ -115,7 +115,7 @@ func main() {
 		libp2p.Identity(priv),
 		libp2p.ListenAddrs([]multiaddr.Multiaddr(config.ListenAddresses)...),
 		libp2p.Security(libp2ptls.ID, libp2ptls.New),
-		libp2p.DefaultTransports,
+		//libp2p.DefaultTransports,
 		libp2p.ConnectionManager(connmgr.NewConnManager(
 			100,
 			400,
