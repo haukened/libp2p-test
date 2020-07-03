@@ -28,23 +28,25 @@ var logger = log.Logger("rendezvous")
 var thisHost string
 
 func handleStream(stream network.Stream) {
-	logger.Info("Got a new stream!")
+	thisStream := stream.ID()
+	fmt.Printf("# Connection from %s\n", thisStream)
 
 	// Create a buffer stream for non blocking read and write.
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
-	go readData(rw)
-	go writeData(rw)
+	go readData(rw, thisStream)
+	go writeData(rw, thisStream)
 
-	// 'stream' will stay open until you close it (or the other side closes it).
+	// 'stream' will stay open until you close it (or the other side closes it)
 }
 
-func readData(rw *bufio.ReadWriter) {
+func readData(rw *bufio.ReadWriter, streamName string) {
+readLoop:
 	for {
 		str, err := rw.ReadString('\n')
 		if err != nil {
-			fmt.Println("Error reading from buffer")
-			panic(err)
+			fmt.Printf("disconnected from stream %s\n", streamName)
+			break readLoop
 		}
 
 		if str == "" {
@@ -59,32 +61,34 @@ func readData(rw *bufio.ReadWriter) {
 	}
 }
 
-func writeData(rw *bufio.ReadWriter) {
+func writeData(rw *bufio.ReadWriter, streamName string) {
 	stdReader := bufio.NewReader(os.Stdin)
-
+writeLoop:
 	for {
 		fmt.Print("> ")
 		sendData, err := stdReader.ReadString('\n')
 		if err != nil {
 			fmt.Println("Error reading from stdin")
-			panic(err)
+			//panic(err)
+			break writeLoop
 		}
 
 		_, err = rw.WriteString(fmt.Sprintf("%s: %s\n", thisHost, sendData))
 		if err != nil {
-			fmt.Println("Error writing to buffer")
-			panic(err)
+			fmt.Printf("Error writing to buffer for stream %s\n", streamName)
+			//panic(err)
+			break writeLoop
 		}
 		err = rw.Flush()
 		if err != nil {
 			fmt.Println("Error flushing buffer")
-			panic(err)
+			//panic(err)
+			break writeLoop
 		}
 	}
 }
 
 func main() {
-	//log.SetAllLoggers(logging.WARNING)
 	log.SetAllLoggers(log.LevelWarn)
 	log.SetLogLevel("rendezvous", "info")
 	help := flag.Bool("h", false, "Display Help")
@@ -127,7 +131,7 @@ func main() {
 		panic(err)
 	}
 	logger.Info("Host created. We are:", host.ID())
-	thisHost = host.ID().String()[0:4]
+	thisHost = host.ID().String()[len(host.ID())-6:]
 	logger.Info(host.Addrs())
 
 	// Set a function as stream handler. This function is called when a peer
@@ -197,8 +201,8 @@ func main() {
 		} else {
 			rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
-			go writeData(rw)
-			go readData(rw)
+			go writeData(rw, "")
+			go readData(rw, "")
 		}
 
 		logger.Info("Connected to:", peer)
